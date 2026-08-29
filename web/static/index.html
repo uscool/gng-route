@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RouterBench Portal — Multi-Model routing dashboard</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: rgba(17, 25, 40, 0.75);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --primary: #4f46e5;
+            --primary-hover: #6366f1;
+            --primary-glow: rgba(79, 70, 229, 0.3);
+            --accent: #00f2fe;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --text-dark: #6b7280;
+            --success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.15);
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(79, 70, 229, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(0, 242, 254, 0.06) 0%, transparent 40%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            line-height: 1.5;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+
+        /* Header section */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 1.5rem;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-dot {
+            width: 12px;
+            height: 12px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 50%;
+            box-shadow: 0 0 12px var(--primary);
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            background: linear-gradient(135deg, #ffffff 30%, var(--text-muted) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            padding: 0.35rem 0.85rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--success);
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            background-color: var(--success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        /* Dashboard Grid Layout */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 1.4fr;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        @media (max-width: 900px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Glassmorphism Cards */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 2rem;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            letter-spacing: -0.01em;
+        }
+
+        .card-title svg {
+            color: var(--primary);
+        }
+
+        /* Form elements */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 1rem;
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 0.95rem;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px var(--primary-glow);
+        }
+
+        select {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 0.8rem 1rem;
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 0.95rem;
+            outline: none;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        select:focus {
+            border-color: var(--primary);
+        }
+
+        select option {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+        }
+
+        /* Slider elements */
+        .slider-container {
+            margin-bottom: 1rem;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .lambda-val-badge {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--primary-glow);
+            border: 1px solid var(--primary);
+            color: #c7d2fe;
+            padding: 0.15rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 8px var(--accent);
+            transition: transform 0.1s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .presets-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+
+        .preset-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--card-border);
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-family: inherit;
+            padding: 0.4rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .preset-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-main);
+        }
+
+        .preset-btn.active {
+            background: var(--primary-glow);
+            border-color: var(--primary);
+            color: #c7d2fe;
+        }
+
+        /* Submit Button */
+        .submit-btn {
+            width: 100%;
+            background: linear-gradient(135deg, var(--primary), #3b82f6);
+            border: none;
+            color: white;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 600;
+            padding: 1rem;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+        }
+
+        .submit-btn:hover {
+            filter: brightness(1.1);
+            box-shadow: 0 6px 20px rgba(79, 70, 229, 0.5);
+        }
+
+        .submit-btn:active {
+            transform: translateY(1px);
+        }
+
+        /* Results section */
+        .results-wrapper {
+            min-height: 480px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .placeholder-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            color: var(--text-dark);
+            gap: 1rem;
+        }
+
+        .placeholder-icon {
+            width: 48px;
+            height: 48px;
+            opacity: 0.25;
+            color: var(--text-muted);
+        }
+
+        /* Active Result Styling */
+        .result-active {
+            display: none;
+            animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .routed-header {
+            background: rgba(79, 70, 229, 0.08);
+            border: 1px solid rgba(79, 70, 229, 0.2);
+            border-radius: 12px;
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .routed-label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 0.25rem;
+        }
+
+        .routed-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: #ffffff;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+
+        .routed-badge {
+            background: var(--success-glow);
+            border: 1px solid var(--success);
+            color: var(--success);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        /* Breakdown list */
+        .breakdown-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .model-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            max-height: 250px;
+            overflow-y: auto;
+            padding-right: 0.25rem;
+        }
+
+        .model-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .model-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .model-list::-webkit-scrollbar-thumb {
+            background: var(--card-border);
+            border-radius: 2px;
+        }
+
+        .model-item {
+            display: grid;
+            grid-template-columns: 2.2fr 1fr 1fr 1fr;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 0.65rem 1rem;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+        }
+
+        .model-item.selected {
+            background: rgba(16, 185, 129, 0.08);
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .model-name {
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .model-item.selected .model-name {
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        .model-val {
+            font-family: 'JetBrains Mono', monospace;
+            text-align: right;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.5; box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            70% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); opacity: 0.5; box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div class="logo-section">
+            <div class="logo-dot"></div>
+            <div class="logo-text">RouterBench Portal</div>
+        </div>
+        <div class="status-badge">
+            <div class="status-indicator"></div>
+            <span>Routing Engine: Active</span>
+        </div>
+    </header>
+
+    <div class="dashboard-grid">
+        <!-- Controls Card (Left Column) -->
+        <div class="card">
+            <div class="card-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                <span>Router Inputs</span>
+            </div>
+            
+            <form id="routing-form">
+                <div class="form-group">
+                    <label for="prompt">Ask a Question / Input Prompt</label>
+                    <textarea id="prompt" placeholder="Type or paste your prompt here (e.g. 'Solve for x: 3x + 7 = 22' or 'Write a Python function to check prime numbers')..." required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="router-type">Select Routing Algorithm</label>
+                    <select id="router-type">
+                        <option value="uniroute">UniRoute (K-Means)</option>
+                        <option value="knn">KNN Router (RouterBench)</option>
+                        <option value="mlp">MLP Router (RouterBench)</option>
+                        <option value="svm">SVM Router (RouterBench)</option>
+                        <option value="cascading">Cascading Router (RouterBench)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <div class="slider-header">
+                        <label for="lambda-val">Cost Penalty (λ)</label>
+                        <span class="lambda-val-badge" id="lambda-display">1.00</span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" id="lambda-val" min="0" max="200" step="0.1" value="1.0">
+                    </div>
+                    <div class="presets-grid">
+                        <button type="button" class="preset-btn" data-val="0.0">λ = 0.0 (Max Quality)</button>
+                        <button type="button" class="preset-btn active" data-val="1.0">λ = 1.0 (Balanced)</button>
+                        <button type="button" class="preset-btn" data-val="100.0">λ = 100.0 (Budget)</button>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submit-btn">
+                    <span class="spinner" id="btn-spinner"></span>
+                    <span id="btn-text">Route Query</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- Output Details Card (Right Column) -->
+        <div class="card">
+            <div class="card-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                <span>Routing Decision Engine</span>
+            </div>
+
+            <div class="results-wrapper">
+                <!-- Placeholder state before query -->
+                <div class="placeholder-state" id="placeholder-container">
+                    <svg class="placeholder-icon" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 21l8.982-5.03c1.503-1.32 2.54-3.22 2.54-5.352 0-4.212-3.57-7.618-7.972-7.618-4.404 0-7.973 3.406-7.973 7.618 0 2.42 1.109 4.58 2.84 6.012Zm0 0L9 21l8.982-5.03M12 9v3m0 3h.008v.008H12V15Z"/></svg>
+                    <p style="font-weight: 500;">Ready to Route</p>
+                    <p style="font-size: 0.85rem; max-width: 280px;">Enter your question on the left and click 'Route Query' to trigger the decision algorithm.</p>
+                </div>
+
+                <!-- Result active state -->
+                <div class="result-active" id="result-container">
+                    <div class="routed-header">
+                        <div>
+                            <div class="routed-label">Optimal Routed Model</div>
+                            <div class="routed-value" id="res-model">gpt-4-1106-preview</div>
+                        </div>
+                        <div class="routed-badge">Best Score</div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">Assigned Cluster</div>
+                            <div class="stat-value" id="res-cluster" style="color: var(--accent);">#4</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Estimated Cost</div>
+                            <div class="stat-value" id="res-cost" style="color: #ffffff;">$0.003304</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label" id="res-metric-label">Cluster Error</div>
+                            <div class="stat-value" id="res-error" style="color: var(--danger);">13.6%</div>
+                        </div>
+                    </div>
+
+                    <div class="breakdown-title" id="breakdown-desc">Candidate Pool Score Comparison (Lower is Better)</div>
+                    
+                    <!-- Headers of candidate list -->
+                    <div class="model-item" id="breakdown-header" style="border: none; background: transparent; padding-bottom: 0.25rem; font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">
+                        <div>Model Name</div>
+                        <div style="text-align: right;">Cost</div>
+                        <div style="text-align: right;" id="res-header-metric">Error</div>
+                        <div style="text-align: right;" id="res-header-score">Score (E+λC)</div>
+                    </div>
+                    
+                    <div class="model-list" id="res-breakdown-list">
+                        <!-- Dynamic list items will go here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const form = document.getElementById('routing-form');
+    const promptInput = document.getElementById('prompt');
+    const routerSelect = document.getElementById('router-type');
+    const lambdaSlider = document.getElementById('lambda-val');
+    const lambdaDisplay = document.getElementById('lambda-display');
+    const presetBtns = document.querySelectorAll('.preset-btn');
+    
+    const submitBtn = document.getElementById('submit-btn');
+    const btnSpinner = document.getElementById('btn-spinner');
+    const btnText = document.getElementById('btn-text');
+    
+    const placeholderContainer = document.getElementById('placeholder-container');
+    const resultContainer = document.getElementById('result-container');
+    
+    const resModel = document.getElementById('res-model');
+    const resCluster = document.getElementById('res-cluster');
+    const resCost = document.getElementById('res-cost');
+    const resError = document.getElementById('res-error');
+    const resBreakdownList = document.getElementById('res-breakdown-list');
+
+    // Lambda slider interactions
+    lambdaSlider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        lambdaDisplay.textContent = val.toFixed(2);
+        
+        // Remove active class from preset buttons
+        presetBtns.forEach(btn => btn.classList.remove('active'));
+    });
+
+    // Preset buttons clicks
+    presetBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            presetBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            const val = parseFloat(btn.getAttribute('data-val'));
+            lambdaSlider.value = val;
+            lambdaDisplay.textContent = val.toFixed(2);
+        });
+    });
+
+    // Handle Form Submit
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const prompt = promptInput.value.trim();
+        const lambda_val = parseFloat(lambdaSlider.value);
+        const router_type = routerSelect.value;
+        
+        if (!prompt) return;
+
+        // UI Loading State
+        submitBtn.disabled = true;
+        btnSpinner.style.display = 'inline-block';
+        btnText.textContent = 'Routing...';
+        
+        try {
+            const response = await fetch('/api/route', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    prompt,
+                    lambda_val,
+                    router_type
+                })
+            });
+
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error || 'Server error');
+            }
+
+            const data = await response.json();
+            displayResults(data);
+            
+        } catch (error) {
+            alert(`Error: ${error.message}`);
+        } finally {
+            // Restore UI State
+            submitBtn.disabled = false;
+            btnSpinner.style.display = 'none';
+            btnText.textContent = 'Route Query';
+        }
+    });
+
+    // Display Results in DOM
+    function displayResults(data) {
+        // Toggle elements
+        placeholderContainer.style.display = 'none';
+        resultContainer.style.display = 'block';
+        
+        const router_type = routerSelect.value;
+        const isUniRoute = (router_type === 'uniroute');
+        
+        // Populate optimal stats
+        resModel.textContent = data.selected_llm_short;
+        resCluster.textContent = data.cluster_id === -1 ? 'N/A' : `#${data.cluster_id}`;
+        resCost.textContent = `$${data.selected_llm_cost.toFixed(6)}`;
+        
+        // Dynamic labels and values based on router type
+        const metricLabel = document.getElementById('res-metric-label');
+        const breakdownDesc = document.getElementById('breakdown-desc');
+        const headerMetric = document.getElementById('res-header-metric');
+        const headerScore = document.getElementById('res-header-score');
+        
+        if (isUniRoute) {
+            metricLabel.textContent = "Cluster Error";
+            resError.style.color = "var(--danger)";
+            resError.textContent = `${((1.0 - data.selected_llm_accuracy) * 100).toFixed(1)}%`;
+            breakdownDesc.textContent = "Candidate Pool Score Comparison (Lower is Better)";
+            headerMetric.textContent = "Error";
+            headerScore.textContent = "Score (E+λC)";
+        } else if (router_type === 'cascading') {
+            metricLabel.textContent = "Predicted Accuracy";
+            resError.style.color = "var(--success)";
+            resError.textContent = `${(data.selected_llm_accuracy * 100).toFixed(1)}%`;
+            breakdownDesc.textContent = "Candidate Pool Comparison (Confidence threshold)";
+            headerMetric.textContent = "Accuracy";
+            headerScore.textContent = "Confidence Margin";
+        } else {
+            metricLabel.textContent = "Predicted Accuracy";
+            resError.style.color = "var(--success)";
+            resError.textContent = `${(data.selected_llm_accuracy * 100).toFixed(1)}%`;
+            breakdownDesc.textContent = "Candidate Pool Score Comparison (Higher is Better)";
+            headerMetric.textContent = "Accuracy";
+            headerScore.textContent = "Score (A-λC)";
+        }
+        
+        // Populate Candidates breakdown list
+        resBreakdownList.innerHTML = '';
+        data.llm_breakdown.forEach(item => {
+            const row = document.createElement('div');
+            row.className = `model-item ${item.is_selected ? 'selected' : ''}`;
+            
+            const scoreDisplay = item.score.toFixed(4);
+            const costDisplay = `$${item.cost.toFixed(5)}`;
+            const metricValueDisplay = isUniRoute 
+                ? `${((1.0 - item.accuracy) * 100).toFixed(1)}%` 
+                : `${(item.accuracy * 100).toFixed(1)}%`;
+            
+            row.innerHTML = `
+                <div class="model-name" title="${item.name}">${item.short_name}</div>
+                <div class="model-val" style="color: var(--text-muted);">${costDisplay}</div>
+                <div class="model-val" style="color: var(--text-muted);">${metricValueDisplay}</div>
+                <div class="model-val" style="font-weight: 600; color: ${item.is_selected ? 'var(--success)' : 'var(--text-main)'}">${scoreDisplay}</div>
+            `;
+            
+            resBreakdownList.appendChild(row);
+        });
+    }
+</script>
+
+</body>
+</html>
