@@ -7,24 +7,24 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --bg-color: #0b0f19;
-            --card-bg: rgba(17, 25, 40, 0.75);
-            --card-border: rgba(255, 255, 255, 0.08);
-            --primary: #4f46e5;
-            --primary-hover: #6366f1;
-            --primary-glow: rgba(79, 70, 229, 0.3);
-            --accent: #00f2fe;
-            --text-main: #f3f4f6;
-            --text-muted: #9ca3af;
+            --bg-color: #f7f9fb;
+            --card-bg: #ffffff;
+            --card-border: #e1e5eb;
+            --primary: #1b365d; /* Elegant Oxford blue */
+            --primary-hover: #112240;
+            --primary-glow: rgba(27, 54, 93, 0.08);
+            --accent: #2e6f40; /* Forest Green */
+            --text-main: #1f2328; /* High-contrast dark gray */
+            --text-muted: #4b5563; /* Medium gray */
             --text-dark: #6b7280;
-            --success: #10b981;
-            --success-glow: rgba(16, 185, 129, 0.15);
-            --danger: #ef4444;
-            --warning: #f59e0b;
+            --success: #2e7d32;
+            --success-glow: rgba(46, 125, 50, 0.08);
+            --danger: #d32f2f;
+            --warning: #ed6c02;
         }
 
         * {
@@ -34,31 +34,26 @@
         }
 
         body {
-            font-family: 'Outfit', sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg-color);
-            background-image: 
-                radial-gradient(circle at 10% 20%, rgba(79, 70, 229, 0.1) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(0, 242, 254, 0.06) 0%, transparent 40%);
-            background-attachment: fixed;
             color: var(--text-main);
             min-height: 100vh;
-            line-height: 1.5;
+            line-height: 1.6;
             overflow-x: hidden;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 2rem 1.5rem;
+            padding: 3rem 1.5rem;
         }
 
-        /* Header section */
         header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 2.5rem;
-            border-bottom: 1px solid var(--card-border);
+            margin-bottom: 3rem;
+            border-bottom: 2px solid var(--card-border);
             padding-bottom: 1.5rem;
         }
 
@@ -69,32 +64,29 @@
         }
 
         .logo-dot {
-            width: 12px;
-            height: 12px;
-            background: linear-gradient(135deg, var(--primary), var(--accent));
-            border-radius: 50%;
-            box-shadow: 0 0 12px var(--primary);
+            width: 14px;
+            height: 14px;
+            background: var(--primary);
+            border-radius: 2px; /* Academic square bullet */
         }
 
         .logo-text {
-            font-size: 1.5rem;
+            font-family: 'Lora', Georgia, serif;
+            font-size: 1.65rem;
             font-weight: 700;
-            letter-spacing: -0.025em;
-            background: linear-gradient(135deg, #ffffff 30%, var(--text-muted) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: var(--primary);
         }
 
         .status-badge {
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.2);
-            padding: 0.35rem 0.85rem;
-            border-radius: 20px;
+            background: var(--success-glow);
+            border: 1px solid rgba(46, 125, 50, 0.2);
+            padding: 0.4rem 1rem;
+            border-radius: 4px;
             font-size: 0.85rem;
-            font-weight: 500;
+            font-weight: 600;
             color: var(--success);
         }
 
@@ -103,14 +95,12 @@
             height: 8px;
             background-color: var(--success);
             border-radius: 50%;
-            animation: pulse 2s infinite;
         }
 
-        /* Dashboard Grid Layout */
         .dashboard-grid {
             display: grid;
-            grid-template-columns: 1.1fr 1.4fr;
-            gap: 2rem;
+            grid-template-columns: 1fr 1.3fr;
+            gap: 2.5rem;
             align-items: start;
         }
 
@@ -120,95 +110,87 @@
             }
         }
 
-        /* Glassmorphism Cards */
         .card {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
-            border-radius: 16px;
-            padding: 2rem;
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            border-radius: 4px; /* Crisp borders */
+            padding: 2.5rem;
+            box-shadow: 0 4px 12px rgba(27, 54, 93, 0.04);
+            transition: all 0.2s ease;
         }
 
         .card:hover {
-            border-color: rgba(255, 255, 255, 0.15);
+            border-color: #b2bac2;
         }
 
         .card-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 1.5rem;
+            font-family: 'Lora', Georgia, serif;
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 2rem;
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            letter-spacing: -0.01em;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 0.75rem;
         }
 
         .card-title svg {
             color: var(--primary);
         }
 
-        /* Form elements */
         .form-group {
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.75rem;
         }
 
         label {
             display: block;
-            font-size: 0.9rem;
-            font-weight: 500;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
             color: var(--text-muted);
             margin-bottom: 0.5rem;
         }
 
         textarea {
             width: 100%;
-            min-height: 120px;
-            background: rgba(0, 0, 0, 0.2);
+            min-height: 140px;
+            background: #ffffff;
             border: 1px solid var(--card-border);
-            border-radius: 10px;
+            border-radius: 4px;
             padding: 1rem;
             color: var(--text-main);
             font-family: inherit;
             font-size: 0.95rem;
             resize: vertical;
             outline: none;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
         textarea:focus {
             border-color: var(--primary);
-            box-shadow: 0 0 0 2px var(--primary-glow);
+            box-shadow: 0 0 0 3px var(--primary-glow);
         }
 
         select {
             width: 100%;
-            background: rgba(0, 0, 0, 0.2);
+            background: #ffffff;
             border: 1px solid var(--card-border);
-            border-radius: 10px;
-            padding: 0.8rem 1rem;
+            border-radius: 4px;
+            padding: 0.85rem 1rem;
             color: var(--text-main);
             font-family: inherit;
             font-size: 0.95rem;
             outline: none;
             cursor: pointer;
-            transition: border-color 0.3s ease;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
         select:focus {
             border-color: var(--primary);
-        }
-
-        select option {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-        }
-
-        /* Slider elements */
-        .slider-container {
-            margin-bottom: 1rem;
+            box-shadow: 0 0 0 3px var(--primary-glow);
         }
 
         .slider-header {
@@ -218,40 +200,58 @@
             margin-bottom: 0.5rem;
         }
 
-        .lambda-val-badge {
+        #lambda-input {
+            width: 90px;
+            background: #ffffff;
+            border: 1px solid var(--card-border);
+            border-radius: 4px;
+            padding: 0.3rem 0.5rem;
+            color: var(--text-main);
             font-family: 'JetBrains Mono', monospace;
-            background: var(--primary-glow);
-            border: 1px solid var(--primary);
-            color: #c7d2fe;
-            padding: 0.15rem 0.5rem;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            font-weight: 500;
+            font-size: 0.9rem;
+            font-weight: 600;
+            outline: none;
+            text-align: right;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        #lambda-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        .lambda-hint {
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-muted);
+            min-height: 1.2em;
         }
 
         input[type="range"] {
             -webkit-appearance: none;
             width: 100%;
-            height: 6px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 5px;
+            height: 5px;
+            background: #d1d5db;
+            border-radius: 3px;
             outline: none;
-            cursor: pointer;
+            margin: 0.5rem 0;
         }
 
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            appearance: none;
-            width: 16px;
-            height: 16px;
+            width: 17px;
+            height: 17px;
             border-radius: 50%;
-            background: var(--accent);
-            box-shadow: 0 0 8px var(--accent);
+            background: var(--primary);
+            border: 2px solid #ffffff;
+            box-shadow: 0 1px 4px rgba(27, 54, 93, 0.3);
+            cursor: pointer;
             transition: transform 0.1s ease;
         }
 
         input[type="range"]::-webkit-slider-thumb:hover {
-            transform: scale(1.2);
+            transform: scale(1.15);
         }
 
         .presets-grid {
@@ -262,55 +262,58 @@
         }
 
         .preset-btn {
-            background: rgba(255, 255, 255, 0.03);
+            background: #ffffff;
             border: 1px solid var(--card-border);
             color: var(--text-muted);
             font-size: 0.75rem;
             font-family: inherit;
             padding: 0.4rem;
-            border-radius: 6px;
+            border-radius: 4px;
             cursor: pointer;
             transition: all 0.2s ease;
         }
 
         .preset-btn:hover {
-            background: rgba(255, 255, 255, 0.08);
+            border-color: #b2bac2;
             color: var(--text-main);
         }
 
         .preset-btn.active {
             background: var(--primary-glow);
             border-color: var(--primary);
-            color: #c7d2fe;
+            color: var(--primary);
+            font-weight: 600;
         }
 
-        /* Submit Button */
         .submit-btn {
             width: 100%;
-            background: linear-gradient(135deg, var(--primary), #3b82f6);
+            background: var(--primary);
             border: none;
             color: white;
-            font-family: inherit;
+            font-family: 'Lora', Georgia, serif;
             font-size: 1rem;
             font-weight: 600;
             padding: 1rem;
-            border-radius: 10px;
+            border-radius: 4px;
             cursor: pointer;
             display: flex;
             justify-content: center;
             align-items: center;
             gap: 0.5rem;
-            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);
-            transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+            transition: background-color 0.2s ease;
         }
 
         .submit-btn:hover {
-            filter: brightness(1.1);
-            box-shadow: 0 6px 20px rgba(79, 70, 229, 0.5);
+            background: var(--primary-hover);
         }
 
         .submit-btn:active {
             transform: translateY(1px);
+        }
+
+        .submit-btn:disabled {
+            background: #b2bac2;
+            cursor: not-allowed;
         }
 
         /* Results section */
@@ -329,35 +332,39 @@
             text-align: center;
             color: var(--text-dark);
             gap: 1rem;
+            border: 2px dashed var(--card-border);
+            border-radius: 4px;
+            padding: 4rem 2rem;
         }
 
         .placeholder-icon {
             width: 48px;
             height: 48px;
-            opacity: 0.25;
+            opacity: 0.35;
             color: var(--text-muted);
         }
 
         /* Active Result Styling */
         .result-active {
             display: none;
-            animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            animation: slideUp 0.3s ease-out forwards;
         }
 
         .routed-header {
-            background: rgba(79, 70, 229, 0.08);
-            border: 1px solid rgba(79, 70, 229, 0.2);
-            border-radius: 12px;
+            background: var(--primary-glow);
+            border: 1px solid rgba(27, 54, 93, 0.15);
+            border-left: 4px solid var(--primary);
+            border-radius: 4px;
             padding: 1.25rem 1.5rem;
             margin-bottom: 1.5rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
         .routed-label {
-            font-size: 0.85rem;
+            font-size: 0.75rem;
+            font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.05em;
             color: var(--text-muted);
@@ -365,19 +372,18 @@
         }
 
         .routed-value {
+            font-family: 'Lora', Georgia, serif;
             font-size: 1.4rem;
             font-weight: 700;
-            letter-spacing: -0.02em;
-            color: #ffffff;
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+            color: var(--primary);
         }
 
         .routed-badge {
             background: var(--success-glow);
-            border: 1px solid var(--success);
+            border: 1px solid rgba(46, 125, 50, 0.3);
             color: var(--success);
             padding: 0.25rem 0.75rem;
-            border-radius: 20px;
+            border-radius: 4px;
             font-size: 0.8rem;
             font-weight: 600;
         }
@@ -391,34 +397,38 @@
         }
 
         .stat-card {
-            background: rgba(255, 255, 255, 0.02);
+            background: var(--bg-color);
             border: 1px solid var(--card-border);
-            border-radius: 10px;
+            border-radius: 4px;
             padding: 1rem;
             text-align: center;
         }
 
         .stat-label {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
+            font-weight: 600;
             text-transform: uppercase;
+            letter-spacing: 0.05em;
             color: var(--text-muted);
-            margin-bottom: 0.25rem;
+            margin-bottom: 0.3rem;
         }
 
         .stat-value {
             font-family: 'JetBrains Mono', monospace;
             font-size: 1.1rem;
-            font-weight: 600;
+            font-weight: 700;
+            color: var(--text-main);
         }
 
         /* Breakdown list */
         .breakdown-title {
+            font-family: 'Lora', Georgia, serif;
             font-size: 0.95rem;
-            font-weight: 600;
-            color: var(--text-muted);
+            font-weight: 700;
+            color: var(--primary);
             margin-bottom: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 0.4rem;
         }
 
         .model-list {
@@ -447,21 +457,23 @@
             display: grid;
             grid-template-columns: 2.2fr 1fr 1fr 1fr;
             align-items: center;
-            background: rgba(255, 255, 255, 0.01);
+            background: #ffffff;
             border: 1px solid var(--card-border);
-            border-radius: 8px;
+            border-radius: 4px;
             padding: 0.65rem 1rem;
-            font-size: 0.85rem;
-            transition: all 0.2s ease;
+            font-size: 0.88rem;
+            transition: all 0.15s ease;
         }
 
         .model-item.selected {
-            background: rgba(16, 185, 129, 0.08);
-            border-color: rgba(16, 185, 129, 0.3);
+            background: rgba(46, 125, 50, 0.04);
+            border-color: var(--success);
+            border-left: 3px solid var(--success);
         }
 
         .model-name {
             font-weight: 500;
+            color: var(--text-main);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -477,15 +489,14 @@
             text-align: right;
         }
 
-        /* Loading Spinner */
         .spinner {
             display: none;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
             border-top-color: white;
-            animation: spin 1s ease-in-out infinite;
+            animation: spin 0.8s linear infinite;
         }
 
         /* Animations */
@@ -536,6 +547,8 @@
                 <div class="form-group">
                     <label for="router-type">Select Routing Algorithm</label>
                     <select id="router-type">
+                        <option value="gng_shared">GNG Shared Router (Shared Topology)</option>
+                        <option value="gng">GNG Router (Isolated Topologies)</option>
                         <option value="uniroute">UniRoute (K-Means)</option>
                         <option value="knn">KNN Router (RouterBench)</option>
                         <option value="mlp">MLP Router (RouterBench)</option>
@@ -547,7 +560,7 @@
                 <div class="form-group">
                     <div class="slider-header">
                         <label for="lambda-val">Cost Penalty (λ)</label>
-                        <span class="lambda-val-badge" id="lambda-display">1.00</span>
+                        <input type="number" id="lambda-input" min="0" max="1000000" step="0.1" value="1.0" title="Enter λ directly">
                     </div>
                     <div class="slider-container">
                         <input type="range" id="lambda-val" min="0" max="200" step="0.1" value="1.0">
@@ -557,6 +570,7 @@
                         <button type="button" class="preset-btn active" data-val="1.0">λ = 1.0 (Balanced)</button>
                         <button type="button" class="preset-btn" data-val="100.0">λ = 100.0 (Budget)</button>
                     </div>
+                    <p class="lambda-hint" id="lambda-hint"></p>
                 </div>
 
                 <button type="submit" class="submit-btn" id="submit-btn">
@@ -594,11 +608,11 @@
                     <div class="stats-grid">
                         <div class="stat-card">
                             <div class="stat-label">Assigned Cluster</div>
-                            <div class="stat-value" id="res-cluster" style="color: var(--accent);">#4</div>
+                            <div class="stat-value" id="res-cluster" style="color: var(--accent);">N/A</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-label">Estimated Cost</div>
-                            <div class="stat-value" id="res-cost" style="color: #ffffff;">$0.003304</div>
+                            <div class="stat-value" id="res-cost" style="color: var(--text-main);">$0.003304</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-label" id="res-metric-label">Cluster Error</div>
@@ -630,7 +644,8 @@
     const promptInput = document.getElementById('prompt');
     const routerSelect = document.getElementById('router-type');
     const lambdaSlider = document.getElementById('lambda-val');
-    const lambdaDisplay = document.getElementById('lambda-display');
+    const lambdaInput = document.getElementById('lambda-input');
+    const lambdaHint = document.getElementById('lambda-hint');
     const presetBtns = document.querySelectorAll('.preset-btn');
     
     const submitBtn = document.getElementById('submit-btn');
@@ -646,24 +661,54 @@
     const resError = document.getElementById('res-error');
     const resBreakdownList = document.getElementById('res-breakdown-list');
 
-    // Lambda slider interactions
+    function getLambdaVal() {
+        return parseFloat(lambdaInput.value) || 0;
+    }
+
+    function setLambdaVal(val) {
+        lambdaInput.value = val.toFixed(2);
+        // Slider caps at 200; beyond that the slider just stays at max
+        lambdaSlider.value = Math.min(val, 200);
+        updateLambdaHint(val);
+        presetBtns.forEach(btn => {
+            btn.classList.toggle('active', parseFloat(btn.getAttribute('data-val')) === val);
+        });
+    }
+
+    function updateLambdaHint(val) {
+        const rt = routerSelect.value;
+        if (rt === 'cascading') {
+            const tau = (1.0 / (1.0 + 0.1 * val)).toFixed(3);
+            lambdaHint.textContent = `→ Cascade threshold τ = ${tau}`;
+        } else {
+            lambdaHint.textContent = '';
+        }
+    }
+
+    // Sync slider → input box
     lambdaSlider.addEventListener('input', (e) => {
         const val = parseFloat(e.target.value);
-        lambdaDisplay.textContent = val.toFixed(2);
-        
-        // Remove active class from preset buttons
-        presetBtns.forEach(btn => btn.classList.remove('active'));
+        setLambdaVal(val);
     });
+
+    // Sync input box → slider
+    lambdaInput.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        if (!isNaN(val) && val >= 0) {
+            lambdaSlider.value = Math.min(val, 200);
+            updateLambdaHint(val);
+            presetBtns.forEach(btn => btn.classList.remove('active'));
+        }
+    });
+
+    // Show cascading hint when router changes
+    routerSelect.addEventListener('change', () => updateLambdaHint(getLambdaVal()));
 
     // Preset buttons clicks
     presetBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-            presetBtns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            
             const val = parseFloat(btn.getAttribute('data-val'));
-            lambdaSlider.value = val;
-            lambdaDisplay.textContent = val.toFixed(2);
+            setLambdaVal(val);
         });
     });
 
@@ -672,7 +717,7 @@
         e.preventDefault();
         
         const prompt = promptInput.value.trim();
-        const lambda_val = parseFloat(lambdaSlider.value);
+        const lambda_val = getLambdaVal();
         const router_type = routerSelect.value;
         
         if (!prompt) return;
@@ -720,11 +765,12 @@
         resultContainer.style.display = 'block';
         
         const router_type = routerSelect.value;
-        const isUniRoute = (router_type === 'uniroute');
+        const isUniRouteOrGNG = (router_type === 'uniroute' || router_type === 'gng' || router_type === 'gng_shared');
         
         // Populate optimal stats
         resModel.textContent = data.selected_llm_short;
         resCluster.textContent = data.cluster_id === -1 ? 'N/A' : `#${data.cluster_id}`;
+        resCost.style.color = 'var(--text-main)';
         resCost.textContent = `$${data.selected_llm_cost.toFixed(6)}`;
         
         // Dynamic labels and values based on router type
@@ -733,25 +779,26 @@
         const headerMetric = document.getElementById('res-header-metric');
         const headerScore = document.getElementById('res-header-score');
         
-        if (isUniRoute) {
-            metricLabel.textContent = "Cluster Error";
-            resError.style.color = "var(--danger)";
+        if (isUniRouteOrGNG) {
+            metricLabel.textContent = (router_type === 'gng' || router_type === 'gng_shared') ? "Local Error" : "Cluster Error";
+            resError.style.color = 'var(--danger)';
             resError.textContent = `${((1.0 - data.selected_llm_accuracy) * 100).toFixed(1)}%`;
-            breakdownDesc.textContent = "Candidate Pool Score Comparison (Lower is Better)";
+            breakdownDesc.textContent = "Candidates — Sorted by Score (Lower is Better)";
             headerMetric.textContent = "Error";
             headerScore.textContent = "Score (E+λC)";
         } else if (router_type === 'cascading') {
+            const tau = (1.0 / (1.0 + 0.1 * data.lambda_val)).toFixed(3);
             metricLabel.textContent = "Predicted Accuracy";
-            resError.style.color = "var(--success)";
+            resError.style.color = 'var(--success)';
             resError.textContent = `${(data.selected_llm_accuracy * 100).toFixed(1)}%`;
-            breakdownDesc.textContent = "Candidate Pool Comparison (Confidence threshold)";
+            breakdownDesc.textContent = `Candidates — Sorted by Cost (Cascade order, τ = ${tau})`;
             headerMetric.textContent = "Accuracy";
-            headerScore.textContent = "Confidence Margin";
+            headerScore.textContent = "Margin vs τ";
         } else {
             metricLabel.textContent = "Predicted Accuracy";
-            resError.style.color = "var(--success)";
+            resError.style.color = 'var(--success)';
             resError.textContent = `${(data.selected_llm_accuracy * 100).toFixed(1)}%`;
-            breakdownDesc.textContent = "Candidate Pool Score Comparison (Higher is Better)";
+            breakdownDesc.textContent = "Candidates — Sorted by Score (Higher is Better)";
             headerMetric.textContent = "Accuracy";
             headerScore.textContent = "Score (A-λC)";
         }
@@ -764,7 +811,7 @@
             
             const scoreDisplay = item.score.toFixed(4);
             const costDisplay = `$${item.cost.toFixed(5)}`;
-            const metricValueDisplay = isUniRoute 
+            const metricValueDisplay = isUniRouteOrGNG 
                 ? `${((1.0 - item.accuracy) * 100).toFixed(1)}%` 
                 : `${(item.accuracy * 100).toFixed(1)}%`;
             

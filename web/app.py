@@ -19,12 +19,15 @@ sentence_model = None
 # Cache loaded models
 loaded_routers = {}
 
-def load_models():
-    global sentence_model
-    # Load sentence transformer using the base model
-    model_name = "BAAI/bge-base-en-v1.5"
+current_model_name = None
+
+def load_models(model_name="BAAI/bge-base-en-v1.5"):
+    global sentence_model, current_model_name
+    if sentence_model is not None and current_model_name == model_name:
+        return
     print(f"Loading SentenceTransformer model {model_name}...")
     sentence_model = SentenceTransformer(model_name)
+    current_model_name = model_name
     print("SentenceTransformer loaded successfully!")
 
 class CustomUnpickler(pickle.Unpickler):
@@ -42,6 +45,15 @@ class CustomUnpickler(pickle.Unpickler):
             elif name == 'CascadingRouterModel':
                 from cascading_router.main import CascadingRouterModel
                 return CascadingRouterModel
+            elif name == 'GNGRouterModel':
+                from gng_router.main import GNGRouterModel
+                return GNGRouterModel
+            elif name == 'GNGSharedRouterModel':
+                from gng_shared.main import GNGSharedRouterModel
+                return GNGSharedRouterModel
+            elif name == 'GNGTopology':
+                from gng_router.main import GNGTopology
+                return GNGTopology
         return super().find_class(module, name)
 
 def get_router(router_type):
@@ -50,6 +62,10 @@ def get_router(router_type):
         
     if router_type == "uniroute":
         model_file = "uniroute_model.pkl"
+    elif router_type == "gng":
+        model_file = "gng_router_model.pkl"
+    elif router_type == "gng_shared":
+        model_file = "gng_shared_model.pkl"
     else:
         model_file = f"{router_type}_router_model.pkl"
         
@@ -68,9 +84,6 @@ def index():
 
 @app.route('/api/route', methods=['POST'])
 def api_route():
-    if sentence_model is None:
-        load_models()
-        
     data = request.json or {}
     prompt = data.get('prompt', '').strip()
     lambda_val = float(data.get('lambda_val', 1.0))
@@ -86,6 +99,10 @@ def api_route():
     router = router_data['router']
     llm_names = router_data['llm_names']
     llm_costs = router_data['llm_costs']
+    required_model = router_data.get('model_name', 'BAAI/bge-base-en-v1.5')
+    
+    # Load correct SentenceTransformer model dynamically
+    load_models(required_model)
     
     # 1. Embed the prompt
     prompt_emb = sentence_model.encode([prompt], convert_to_numpy=True)
@@ -94,7 +111,97 @@ def api_route():
     cluster_id = -1
     accuracies = []
     
-    if router_type == 'uniroute':
+    llm_to_idx = {name: i for i, name in enumerate(llm_names)}
+    emb_1d = prompt_emb[0]
+    
+    if router_type == 'gng':
+        # GNG Router Inference (Soft Boundary Penalty)
+        distances = {}
+        local_errors = {}
+        beta = 2.0
+        
+        for name in llm_names:
+            topology = router.topologies.get(name)
+            if not topology or not topology.nodes:
+                continue
+                
+            node_ids = list(topology.nodes.keys())
+            node_weights = np.array([topology.nodes[nid]['weight'] for nid in node_ids])
+            
+            dists = np.sum((node_weights - emb_1d) ** 2, axis=1)
+            best_idx = np.argmin(dists)
+            best_nid = node_ids[best_idx]
+            
+            d = np.sqrt(dists[best_idx])
+            distances[name] = d
+            local_errors[name] = topology.nodes[best_nid]['error_rate']
+            
+        scores = []
+        for name in llm_names:
+            if name in distances:
+                d = distances[name]
+                boundary = router.boundary_radii.get(name, 0.5)
+                # Soft boundary penalty: beta * max(0, distance - boundary)
+                penalty = beta * max(0.0, d - boundary)
+                err = local_errors[name]
+                cost = llm_costs[llm_to_idx[name]]
+                score = err + penalty + lambda_val * cost
+                scores.append((score, name))
+            else:
+                scores.append((float('inf'), name))
+                
+        best_model = min(scores, key=lambda pair: pair[0])[1]
+        selected_idx = llm_to_idx[best_model]
+        
+        # For breakdown accuracies and scores
+        scores_display = np.zeros(len(llm_names))
+        accuracies_display = np.zeros(len(llm_names))
+        for idx, name in enumerate(llm_names):
+            if name in distances:
+                d = distances[name]
+                boundary = router.boundary_radii.get(name, 0.5)
+                penalty = beta * max(0.0, d - boundary)
+                
+                accuracies_display[idx] = 1.0 - local_errors.get(name, 0.0)
+                scores_display[idx] = local_errors.get(name, 0.0) + penalty + lambda_val * llm_costs[idx]
+            else:
+                accuracies_display[idx] = 0.0
+                scores_display[idx] = 999.0
+                
+        accuracies = np.clip(accuracies_display, 0.0, 1.0)
+        score_display = list(scores_display)
+        
+    elif router_type == 'gng_shared':
+        # GNG Shared Router Inference
+        node_ids = list(router.topology.nodes.keys())
+        node_weights = np.array([router.topology.nodes[nid]['weight'] for nid in node_ids])
+        
+        # Find nearest GNG node in prompt space
+        dists = np.sum((node_weights - emb_1d) ** 2, axis=1)
+        best_node_idx = np.argmin(dists)
+        best_nid = node_ids[best_node_idx]
+        
+        scores = []
+        for name in llm_names:
+            err = router.node_error_rates[best_nid][name]
+            cost = llm_costs[llm_to_idx[name]]
+            score = err + lambda_val * cost
+            scores.append((score, name))
+            
+        best_model = min(scores, key=lambda pair: pair[0])[1]
+        selected_idx = llm_to_idx[best_model]
+        
+        # For breakdown accuracies and scores
+        scores_display = np.zeros(len(llm_names))
+        accuracies_display = np.zeros(len(llm_names))
+        for idx, name in enumerate(llm_names):
+            err = router.node_error_rates[best_nid][name]
+            accuracies_display[idx] = 1.0 - err
+            scores_display[idx] = err + lambda_val * llm_costs[idx]
+            
+        accuracies = np.clip(accuracies_display, 0.0, 1.0)
+        score_display = list(scores_display)
+    elif router_type == 'uniroute':
         cluster_id = int(router.get_cluster_assignments(prompt_emb)[0])
         errors = router.val_errors[:, cluster_id]
         scores = errors + lambda_val * np.array(llm_costs)
@@ -157,8 +264,11 @@ def api_route():
         })
         
     # Sort breakdown (best score first)
-    if router_type == 'uniroute':
-        # For UniRoute, lower score is better
+    if router_type == 'cascading':
+        # Sort by cost ascending (order of evaluation)
+        llm_breakdown = sorted(llm_breakdown, key=lambda x: x['cost'])
+    elif router_type in ['uniroute', 'gng', 'gng_shared']:
+        # For UniRoute and GNG, lower score is better
         llm_breakdown = sorted(llm_breakdown, key=lambda x: x['score'])
     else:
         # For others, higher score is better

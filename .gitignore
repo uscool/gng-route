@@ -1,3 +1,4 @@
 *\__pycache__
 \graphrouter
 *.pkl
+.mcp.json
