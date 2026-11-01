@@ -46,6 +46,7 @@ web/                Flask demo that routes a typed prompt and explains the decis
 scratchpad/         exploratory notebooks from development (not needed for any result)
 routerbench-github/ material copied from the RouterBench authors' repository (see the RouterBench paper)
 routertrain.csv     RouterBench prompts, per-model scores and costs
+paper.pdf           the paper
 ```
 
 ## Setup
@@ -158,9 +159,5 @@ embedding model. Generalization to unseen task types, new LLMs, and price change
 RouterBench is dominated by a few sources (hellaswag 27.8%, grade-school-math 21.2%). UniRoute was run
 with K = 10 clusters while GNG-shared has 107 nodes, so the comparison does not separate the effect of the
 number of regions from the effect of the GNG topology.
-
-## Citation
-
-Citation details will be added when the proceedings are published.
 
 The data is RouterBench: Hu et al., "RouterBench: A benchmark for multi-LLM routing system", arXiv:2403.12031.
