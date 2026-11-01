@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 CAPSTONE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(CAPSTONE_ROOT)
 
-from uniroute.data import load_routerbench_data, get_embeddings, split_dataset, DEFAULT_LLM_NAMES
+from uniroute.data import load_routerbench_data, get_embeddings, split_dataset, DEFAULT_LLM_NAMES, DEFAULT_EMBEDDING_MODEL, DEFAULT_CACHE_PATH
 from gng_shared.main import GNGSharedRouterModel
 
 # np.trapz was removed in NumPy 2.4; np.trapezoid does not exist before NumPy 2.0
@@ -178,7 +178,7 @@ def main():
     
     # 1. Load data & embeddings
     df = load_routerbench_data("routertrain.csv")
-    embeddings = get_embeddings(df['prompt'].tolist(), model_name="BAAI/bge-small-en-v1.5", cache_path="prompt_embeddings_cache.pkl")
+    embeddings = get_embeddings(df['prompt'].tolist(), model_name=DEFAULT_EMBEDDING_MODEL, cache_path=DEFAULT_CACHE_PATH)
     
     # 2. Split dataset (70-30 train-test)
     splits = split_dataset(df, embeddings, train_ratio=0.7, val_ratio=0.0, test_ratio=0.3, seed=42)
@@ -196,7 +196,7 @@ def main():
             'router': router,
             'llm_names': DEFAULT_LLM_NAMES,
             'llm_costs': llm_costs,
-            'model_name': 'BAAI/bge-small-en-v1.5'
+            'model_name': DEFAULT_EMBEDDING_MODEL
         }, f)
     print("Saved trained model to gng_shared_model.pkl")
     

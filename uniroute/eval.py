@@ -1,6 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+# np.trapz was removed in NumPy 2.4; np.trapezoid does not exist before NumPy 2.0
+_trapz = getattr(np, 'trapezoid', None) or np.trapz
+
 def evaluate_policy(routed_indices, test_df, llm_names):
     """
     Computes the average accuracy and average cost of the routed decisions over the test set.
@@ -19,10 +22,15 @@ def evaluate_policy(routed_indices, test_df, llm_names):
     
     return avg_accuracy, avg_cost
 
-def compute_deferral_curve_and_metrics(router, test_embeddings, test_df, llm_names, lambda_grid=None):
+def compute_deferral_curve_and_metrics(router, test_embeddings, test_df, llm_names, lambda_grid=None,
+                                       routing_costs=None):
     """
     Sweeps lambda, computes accuracy and cost, normalizes cost, and calculates
     Area, Area@50%, and QNC.
+
+    routing_costs: per-model costs C_m used in the routing rule. Defaults to the test-split mean
+    costs (the setting reported in the paper); pass training-split means to keep the test split
+    out of the routing decisions entirely.
     """
     if lambda_grid is None:
         # A dense log-spaced grid covering all trade-off ranges, plus 0.0
@@ -49,7 +57,10 @@ def compute_deferral_curve_and_metrics(router, test_embeddings, test_df, llm_nam
     raw_points = []
     # We also retrieve the cost of each model (using mean cost from test set for routing decision C_m)
     # Note: the routing rule is argmin_m (E_{m,k} + lambda * C_m). We use the mean cost on the test set as C_m.
-    llm_costs_for_routing = [llm_stats[model_name]['cost'] for model_name in llm_names]
+    if routing_costs is None:
+        llm_costs_for_routing = [llm_stats[model_name]['cost'] for model_name in llm_names]
+    else:
+        llm_costs_for_routing = list(routing_costs)
     
     for l_val in lambda_grid:
         decisions = router.route(test_embeddings, l_val, llm_costs_for_routing)
@@ -83,7 +94,7 @@ def compute_deferral_curve_and_metrics(router, test_embeddings, test_df, llm_nam
     accuracies = np.array([p[1] for p in rel_points])
     
     # 3. Calculate Area under the deferral curve (AUDC) using trapezoidal rule
-    area_100 = np.trapz(accuracies, relative_costs)
+    area_100 = _trapz(accuracies, relative_costs)
     
     # 4. Calculate Area@50% (AUDC up to relative cost 0.5)
     # Find accuracy at exactly relative cost 0.5 via linear interpolation
@@ -98,7 +109,7 @@ def compute_deferral_curve_and_metrics(router, test_embeddings, test_df, llm_nam
     points_50 = sorted(list(set(zip(rel_costs_50, accuracies_50))), key=lambda p: p[0])
     r_50 = np.array([p[0] for p in points_50])
     acc_50 = np.array([p[1] for p in points_50])
-    area_50 = np.trapz(acc_50, r_50)
+    area_50 = _trapz(acc_50, r_50)
     
     # 5. Calculate Quality-Neutral Cost (QNC)
     # Minimum relative cost to achieve accuracy >= a_max
@@ -120,14 +131,14 @@ def compute_deferral_curve_and_metrics(router, test_embeddings, test_df, llm_nam
         'a_max': a_max
     }
 
-def plot_deferral_curve(metrics, output_path):
+def plot_deferral_curve(metrics, output_path, router_name="UniRoute (K-Means)"):
     """
     Plots the deferral curve and saves the figure.
     """
     plt.figure(figsize=(8, 6))
     
     # Plot router curve
-    plt.plot(metrics['relative_costs'], metrics['accuracies'], label='UniRoute (K-Means)', color='blue', linewidth=2)
+    plt.plot(metrics['relative_costs'], metrics['accuracies'], label=router_name, color='blue', linewidth=2)
     
     # Plot individual LLMs
     for name, stats in metrics['llm_stats'].items():
@@ -140,7 +151,7 @@ def plot_deferral_curve(metrics, output_path):
     # Label formatting
     plt.xlabel('Relative Cost (0.0 = Cheapest, 1.0 = Most Expensive)', fontsize=11)
     plt.ylabel('Accuracy', fontsize=11)
-    plt.title('Deferral Curve - UniRoute (K-Means)', fontsize=13, fontweight='bold')
+    plt.title(f'Deferral Curve - {router_name}', fontsize=13, fontweight='bold')
     plt.grid(True, linestyle='--', alpha=0.5)
     plt.xlim(-0.05, 1.05)
     

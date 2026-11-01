@@ -104,7 +104,7 @@ def main():
         }, f, indent=4)
         
     # Plot curve
-    plot_deferral_curve(metrics, "mlp_router/outputs/deferral_curve.png")
+    plot_deferral_curve(metrics, "mlp_router/outputs/deferral_curve.png", router_name="MLP")
     print("Evaluation completed successfully!")
 
 if __name__ == "__main__":

@@ -10,7 +10,7 @@ import pandas as pd
 CAPSTONE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(CAPSTONE_ROOT)
 
-from uniroute.data import load_routerbench_data, get_embeddings, split_dataset, DEFAULT_LLM_NAMES
+from uniroute.data import load_routerbench_data, get_embeddings, split_dataset, DEFAULT_LLM_NAMES, DEFAULT_EMBEDDING_MODEL, DEFAULT_CACHE_PATH
 from uniroute.eval import compute_deferral_curve_and_metrics, plot_deferral_curve
 
 class GNGTopology:
@@ -386,7 +386,7 @@ def main():
     # Load dataset & embeddings if training or refreshing
     if args.mode in ["train", "refresh"]:
         df = load_routerbench_data(args.data_path)
-        embeddings = get_embeddings(df['prompt'].tolist(), model_name="BAAI/bge-small-en-v1.5", cache_path="prompt_embeddings_cache.pkl")
+        embeddings = get_embeddings(df['prompt'].tolist(), model_name=DEFAULT_EMBEDDING_MODEL, cache_path=DEFAULT_CACHE_PATH)
         
         # Calculate mean LLM costs
         llm_costs = [df[f"{llm}|total_cost"].mean() for llm in DEFAULT_LLM_NAMES]
@@ -408,7 +408,7 @@ def main():
                 'router': model,
                 'llm_names': model.llm_names,
                 'llm_costs': [df[f"{name}|total_cost"].mean() for name in model.llm_names],
-                'model_name': 'BAAI/bge-small-en-v1.5'
+                'model_name': DEFAULT_EMBEDDING_MODEL
             }, f)
         print(f"Saved trained GNG router model to {args.model_path}")
         
@@ -433,7 +433,7 @@ def main():
                 'router': model,
                 'llm_names': model.llm_names,
                 'llm_costs': [df[f"{name}|total_cost"].mean() for name in model.llm_names],
-                'model_name': 'BAAI/bge-small-en-v1.5'
+                'model_name': DEFAULT_EMBEDDING_MODEL
             }, f)
         print(f"Successfully refreshed and saved GNG router model to {args.model_path}")
         
@@ -462,7 +462,7 @@ def main():
                 'router': model,
                 'llm_names': model.llm_names,
                 'llm_costs': [df[f"{name}|total_cost"].mean() for name in model.llm_names],
-                'model_name': 'BAAI/bge-small-en-v1.5'
+                'model_name': DEFAULT_EMBEDDING_MODEL
             }, f)
         print(f"Successfully removed '{args.remove_model}' and saved updated model to {args.model_path}")
 
