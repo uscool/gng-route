@@ -12,16 +12,14 @@ CAPSTONE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(CAPSTONE_ROOT)
 
 from uniroute.data import load_routerbench_data, get_embeddings, split_dataset, DEFAULT_LLM_NAMES
-from gng_router.main import GNGRouterModel
+from gng_shared.main import GNGSharedRouterModel
 
 # np.trapz was removed in NumPy 2.4; np.trapezoid does not exist before NumPy 2.0
 _trapz = getattr(np, 'trapezoid', None) or np.trapz
 
-def evaluate_gng_router(router, test_embeddings, test_df, llm_names, lambda_grid=None, beta=2.0):
+def evaluate_gng_shared_router(router, test_embeddings, test_df, llm_names, lambda_grid=None):
     """
-    Highly optimized GNG evaluation sweep. Precomputes closest nodes, distances,
-    and boundary flags for all test samples across all models, eliminating redundant
-    KD-tree lookups during the lambda sweep.
+    Highly optimized evaluation for the GNG shared router.
     """
     n_samples = len(test_embeddings)
     n_models = len(llm_names)
@@ -42,52 +40,34 @@ def evaluate_gng_router(router, test_embeddings, test_df, llm_names, lambda_grid
     c_max = max(costs_list)
     a_max = max(stats['accuracy'] for stats in llm_stats.values())
     
-    # Precompute closest node distance and local error
-    test_dists = np.zeros((n_samples, n_models))
-    test_errors = np.zeros((n_samples, n_models))
-    boundaries = np.zeros(n_models)
+    # Precompute nearest node index for each test sample
+    node_ids = list(router.topology.nodes.keys())
+    node_weights = np.array([router.topology.nodes[nid]['weight'] for nid in node_ids])
     
-    precomputed = {}
-    for m_idx, name in enumerate(llm_names):
-        topology = router.topologies[name]
-        boundaries[m_idx] = router.boundary_radii[name]
-        if topology.nodes:
-            node_ids = list(topology.nodes.keys())
-            weights = np.array([topology.nodes[nid]['weight'] for nid in node_ids])
-            errors = np.array([topology.nodes[nid]['error_rate'] for nid in node_ids])
-            precomputed[m_idx] = {
-                'weights': weights,
-                'errors': errors
-            }
+    nearest_node_indices = np.zeros(n_samples, dtype=int)
+    for i in range(n_samples):
+        x = test_embeddings[i]
+        dists = np.sum((node_weights - x) ** 2, axis=1)
+        nearest_node_indices[i] = np.argmin(dists)
+        
+    # Precompute node error matrix: shape (n_nodes, n_models)
+    error_matrix = np.zeros((len(node_ids), n_models))
+    for i, nid in enumerate(node_ids):
+        for m_idx, name in enumerate(llm_names):
+            error_matrix[i, m_idx] = router.node_error_rates[nid][name]
             
-    # Calculate nearest nodes for each test sample once per model
-    for m_idx, name in enumerate(llm_names):
-        if m_idx in precomputed:
-            weights = precomputed[m_idx]['weights']
-            errors = precomputed[m_idx]['errors']
-            
-            # Loop over samples locally (low memory overhead, extremely fast with numpy)
-            for i in range(n_samples):
-                x = test_embeddings[i]
-                dists = np.sum((weights - x) ** 2, axis=1)
-                best_idx = np.argmin(dists)
-                test_dists[i, m_idx] = np.sqrt(dists[best_idx])
-                test_errors[i, m_idx] = errors[best_idx]
-                
     # LLM costs and accuracy vectors
     llm_costs = np.array([llm_stats[name]['cost'] for name in llm_names])
     correctness_matrix = test_df[llm_names].values
     cost_matrix = test_df[[f"{name}|total_cost" for name in llm_names]].values
     
-    # Precompute soft boundary penalty for all test samples
-    penalties = beta * np.maximum(0.0, test_dists - boundaries[np.newaxis, :])
-    adjusted_errors = test_errors + penalties
+    # Precompute mapped error matrix for test set: shape (n_samples, n_models)
+    test_errors = error_matrix[nearest_node_indices]
     
-    # Sweep lambda (fully vectorized, no inner loop!)
+    # Sweep lambda
     raw_points = []
-    
     for l_val in lambda_grid:
-        scores = adjusted_errors + l_val * llm_costs[np.newaxis, :]
+        scores = test_errors + l_val * llm_costs[np.newaxis, :]
         routed_indices = np.argmin(scores, axis=1)
         
         # Evaluate accuracy and cost
@@ -117,7 +97,7 @@ def evaluate_gng_router(router, test_embeddings, test_df, llm_names, lambda_grid
     relative_costs = np.array([p[0] for p in rel_points])
     accuracies = np.array([p[1] for p in rel_points])
     
-    # Calculate Area (AUDC) using trapezoidal integration
+    # Calculate Area (AUDC) using trapezoid integration
     area_100 = _trapz(accuracies, relative_costs)
     
     # Calculate Area@50%
@@ -131,7 +111,7 @@ def evaluate_gng_router(router, test_embeddings, test_df, llm_names, lambda_grid
     acc_50 = np.array([p[1] for p in points_50])
     area_50 = _trapz(acc_50, r_50)
     
-    # Calculate QNC (Quality-preserving Normalized Cost)
+    # Calculate QNC
     valid_indices = np.where(accuracies >= a_max)[0]
     qnc = float(relative_costs[valid_indices[0]]) if len(valid_indices) > 0 else float('inf')
     
@@ -151,7 +131,7 @@ def plot_gng_deferral_curve(metrics, output_path):
     plt.figure(figsize=(8, 6))
     
     # Plot deferral curve
-    plt.plot(metrics['relative_costs'], metrics['accuracies'], label='GNG Router', color='blue', linewidth=2)
+    plt.plot(metrics['relative_costs'], metrics['accuracies'], label='GNG Shared Router', color='blue', linewidth=2)
     
     # Plot individual LLMs
     for name, stats in metrics['llm_stats'].items():
@@ -163,7 +143,7 @@ def plot_gng_deferral_curve(metrics, output_path):
     # Label formatting
     plt.xlabel('Relative Cost (0.0 = Cheapest, 1.0 = Most Expensive)', fontsize=11)
     plt.ylabel('Accuracy', fontsize=11)
-    plt.title('Deferral Curve - GNG Router', fontsize=13, fontweight='bold')
+    plt.title('Deferral Curve - GNG Shared Router', fontsize=13, fontweight='bold')
     plt.grid(True, linestyle='--', alpha=0.5)
     plt.xlim(-0.05, 1.05)
     
@@ -185,47 +165,16 @@ def plot_gng_deferral_curve(metrics, output_path):
     print(f"Deferral curve plot saved to: {output_path}")
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Evaluate the GNG-isolated router.")
+    parser = argparse.ArgumentParser(description="Evaluate the GNG-shared router.")
     parser.add_argument("--seed", type=int, default=0,
-                        help="NumPy seed for the order in which training prompts are presented to the GNG")
-    parser.add_argument("--tune-beta-on", choices=["test", "val"], default="test",
-                        help="Where the boundary-penalty weight beta is selected. 'test' reproduces the paper "
-                             "(beta was swept on the test split, which makes the reported numbers optimistic). "
-                             "'val' holds out part of the training prompts for the sweep and leaves the test split untouched.")
-    parser.add_argument("--val-fraction", type=float, default=0.15,
-                        help="Fraction of the training prompts held out for the beta sweep when --tune-beta-on val")
+                        help="NumPy seed for the order in which training prompts are presented to the GNG (the paper's headline run uses 0)")
     return parser.parse_args()
-
-def sweep_beta(router, embeddings, eval_df, beta_vals, split_name):
-    """Sweep beta on the given split and return (best_beta, metrics at best_beta)."""
-    best_beta = None
-    best_metrics = None
-    best_score = float('inf')
-
-    print(f"\nSweeping beta values on the {split_name} split to find the optimal soft boundary penalty:")
-    for beta in beta_vals:
-        metrics = evaluate_gng_router(router, embeddings, eval_df, DEFAULT_LLM_NAMES, beta=beta)
-        qnc_val = f"{metrics['qnc']*100:.2f}%" if metrics['qnc'] != float('inf') else "N/A"
-        print(f"  Beta: {beta:<5} -> Area: {metrics['area']:.4f}, Area@50%: {metrics['area_50']:.4f}, QNC: {qnc_val}")
-
-        # Optimization score: prioritize lower QNC, then higher Area
-        # A QNC of inf or 1.0 is penalized
-        qnc_score = metrics['qnc'] if metrics['qnc'] != float('inf') else 10.0
-        # Minimize (qnc_score - area)
-        opt_score = qnc_score - metrics['area']
-        if opt_score < best_score:
-            best_score = opt_score
-            best_beta = beta
-            best_metrics = metrics
-
-    print(f"\nSelected Best Beta: {best_beta}")
-    return best_beta, best_metrics
 
 def main():
     args = parse_args()
     np.random.seed(args.seed)
-    print("=== GNG Router Evaluation ===")
-    os.makedirs("gng_router/outputs", exist_ok=True)
+    print("=== GNG Shared Router Evaluation ===")
+    os.makedirs("gng_shared/outputs", exist_ok=True)
     
     # 1. Load data & embeddings
     df = load_routerbench_data("routertrain.csv")
@@ -234,73 +183,48 @@ def main():
     # 2. Split dataset (70-30 train-test)
     splits = split_dataset(df, embeddings, train_ratio=0.7, val_ratio=0.0, test_ratio=0.3, seed=42)
     
-    beta_vals = [0.1, 0.25, 0.5, 1.0, 1.5, 2.0]
-    best_beta = None
-
-    if args.tune_beta_on == "val":
-        # Hold out part of the training prompts for the beta sweep. The test split is not used
-        # until the final evaluation, so the reported test numbers are not tuned on test data.
-        train_df_all = splits['train_df'].reset_index(drop=True)
-        train_emb_all = splits['train_embeddings']
-        perm = np.random.default_rng(args.seed).permutation(len(train_df_all))
-        n_val = int(args.val_fraction * len(perm))
-        val_idx, fit_idx = perm[:n_val], perm[n_val:]
-        fit_df = train_df_all.iloc[fit_idx].reset_index(drop=True)
-        val_df = train_df_all.iloc[val_idx].reset_index(drop=True)
-        tune_router = GNGRouterModel(llm_names=DEFAULT_LLM_NAMES)
-        tune_router.fit(train_emb_all[fit_idx], fit_df, epochs=5)
-        tune_router.compute_local_error_rates(train_emb_all[fit_idx], fit_df)
-        best_beta, _ = sweep_beta(tune_router, train_emb_all[val_idx], val_df, beta_vals, "validation")
-
-    # 3. Train GNG Router (on the full training split)
-    router = GNGRouterModel(llm_names=DEFAULT_LLM_NAMES)
+    # 3. Train GNG Router
+    router = GNGSharedRouterModel(llm_names=DEFAULT_LLM_NAMES, max_nodes=200)
     router.fit(splits['train_embeddings'], splits['train_df'], epochs=5)
-    router.compute_local_error_rates(splits['train_embeddings'], splits['train_df'])
     
     # Costs
     llm_costs = [splits['train_df'][f"{llm}|total_cost"].mean() for llm in DEFAULT_LLM_NAMES]
     
     # 4. Save model
-    with open("gng_router_model.pkl", "wb") as f:
+    with open("gng_shared_model.pkl", "wb") as f:
         pickle.dump({
             'router': router,
             'llm_names': DEFAULT_LLM_NAMES,
             'llm_costs': llm_costs,
             'model_name': 'BAAI/bge-small-en-v1.5'
         }, f)
-    print("Saved trained model to gng_router_model.pkl")
+    print("Saved trained model to gng_shared_model.pkl")
     
     # 5. Evaluate
-    if best_beta is None:
-        print("\nNOTE: beta is being selected on the TEST split (the setting reported in the paper). "
-              "Use --tune-beta-on val to select it on held-out training prompts instead.")
-        best_beta, best_metrics = sweep_beta(router, splits['test_embeddings'], splits['test_df'], beta_vals, "test")
-    else:
-        best_metrics = evaluate_gng_router(router, splits['test_embeddings'], splits['test_df'], DEFAULT_LLM_NAMES, beta=best_beta)
+    metrics = evaluate_gng_shared_router(router, splits['test_embeddings'], splits['test_df'], DEFAULT_LLM_NAMES)
     
-    # Print best results
+    # Print results
     print("\n" + "="*50)
-    print(f"GNG ROUTER EVALUATION METRICS (Best Beta: {best_beta}, 70-30 split):")
-    print(f"  Area:     {best_metrics['area']:.4f}")
-    print(f"  Area@50%: {best_metrics['area_50']:.4f}")
-    qnc_val = f"{best_metrics['qnc']*100:.2f}%" if best_metrics['qnc'] != float('inf') else "N/A"
+    print("GNG SHARED ROUTER EVALUATION METRICS (70-30 split):")
+    print(f"  Area:     {metrics['area']:.4f}")
+    print(f"  Area@50%: {metrics['area_50']:.4f}")
+    qnc_val = f"{metrics['qnc']*100:.2f}%" if metrics['qnc'] != float('inf') else "N/A"
     print(f"  QNC:      {qnc_val}")
     print("="*50 + "\n")
     
     # Save metrics JSON
-    with open("gng_router/outputs/gng_metrics.json", "w") as f:
+    with open("gng_shared/outputs/metrics.json", "w") as f:
         json.dump({
-            'area': float(best_metrics['area']),
-            'area_50': float(best_metrics['area_50']),
-            'qnc': float(best_metrics['qnc']) if best_metrics['qnc'] != float('inf') else None,
-            'c_min': float(best_metrics['c_min']),
-            'c_max': float(best_metrics['c_max']),
-            'a_max': float(best_metrics['a_max']),
-            'best_beta': best_beta
+            'area': float(metrics['area']),
+            'area_50': float(metrics['area_50']),
+            'qnc': float(metrics['qnc']) if metrics['qnc'] != float('inf') else None,
+            'c_min': float(metrics['c_min']),
+            'c_max': float(metrics['c_max']),
+            'a_max': float(metrics['a_max'])
         }, f, indent=4)
         
     # Plot curve
-    plot_gng_deferral_curve(best_metrics, "gng_router/outputs/deferral_curve.png")
+    plot_gng_deferral_curve(metrics, "gng_shared/outputs/deferral_curve.png")
     print("Evaluation completed successfully!")
 
 if __name__ == "__main__":
