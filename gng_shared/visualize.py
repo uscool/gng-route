@@ -1,6 +1,6 @@
 import os
 import sys
-import pickle
+import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -10,22 +10,28 @@ from sklearn.decomposition import PCA
 CAPSTONE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(CAPSTONE_ROOT)
 
+from uniroute.data import load_router_pickle  # noqa: E402
+
 def main():
     print("=== GNG Shared Router Topology Visualizer ===")
     
-    model_path = "gng_shared_model.pkl"
+    ap = argparse.ArgumentParser(description="Draw the GNG-shared topology figures.")
+    ap.add_argument("--model", default="gng_shared_model.pkl",
+                    help="router pickle to draw (the headline model is written by: python gng_shared/run_eval.py --seed 0)")
+    ap.add_argument("--out-dir", default="gng_shared/outputs", help="folder for the figures (e.g. figures/)")
+    args = ap.parse_args()
+    model_path = args.model
     if not os.path.exists(model_path):
         print(f"Error: Trained model '{model_path}' not found. Please run run_eval.py first.")
         sys.exit(1)
         
     print(f"Loading GNG shared model from {model_path}...")
-    with open(model_path, "rb") as f:
-        saved_data = pickle.load(f)
+    saved_data = load_router_pickle(model_path)
         
     router = saved_data['router']
     llm_names = saved_data['llm_names']
     
-    os.makedirs("gng_shared/outputs", exist_ok=True)
+    os.makedirs(args.out_dir, exist_ok=True)
     
     # 1. Build NetworkX graph
     node_ids = list(router.topology.nodes.keys())
@@ -82,7 +88,7 @@ def main():
     plt.suptitle("GNG Shared Topology: Competency Mapping (Spring Layout)", fontsize=18, fontweight='bold', y=0.96)
     plt.subplots_adjust(hspace=0.3, wspace=0.2, bottom=0.1)
     
-    output_path = "gng_shared/outputs/topologies_visual.png"
+    output_path = os.path.join(args.out_dir, "topologies_visual.png")
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
     plt.close()
     print(f"Topological visualization saved to: {output_path}")

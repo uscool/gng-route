@@ -1,6 +1,6 @@
 import os
 import sys
-import pickle
+import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -10,26 +10,32 @@ from sklearn.decomposition import PCA
 CAPSTONE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(CAPSTONE_ROOT)
 
+from uniroute.data import load_router_pickle  # noqa: E402
+
 from uniroute.data import load_routerbench_data, get_embeddings, DEFAULT_LLM_NAMES
 
 def main():
     print("=== GNG Router Topology Visualizer ===")
     
     # 1. Load trained GNG router model
-    model_path = "gng_router_model.pkl"
+    ap = argparse.ArgumentParser(description="Draw the GNG-isolated topology figures.")
+    ap.add_argument("--model", default="gng_router_model.pkl",
+                    help="router pickle to draw (e.g. paper_models/gng_isolated.pkl for the paper's GNG-isolated model)")
+    ap.add_argument("--out-dir", default="gng_router/outputs", help="folder for the figures (e.g. figures/)")
+    args = ap.parse_args()
+    model_path = args.model
     if not os.path.exists(model_path):
         print(f"Error: Trained model '{model_path}' not found. Please run run_eval.py first to train the model.")
         sys.exit(1)
         
     print(f"Loading GNG router model from {model_path}...")
-    with open(model_path, "rb") as f:
-        saved_data = pickle.load(f)
+    saved_data = load_router_pickle(model_path)
         
     router = saved_data['router']
     llm_names = saved_data['llm_names']
     
     # Create outputs directory
-    os.makedirs("gng_router/outputs", exist_ok=True)
+    os.makedirs(args.out_dir, exist_ok=True)
     
     # We will plot a multi-panel figure for all models
     # 11 models -> Let's use a 4x3 grid (12 panels, last one empty)
@@ -99,7 +105,7 @@ def main():
     plt.suptitle("GNG Competency Graph Visualizations (Disjoint Spring Layouts)", fontsize=18, fontweight='bold', y=0.96)
     plt.subplots_adjust(hspace=0.3, wspace=0.2, bottom=0.1)
     
-    output_path = "gng_router/outputs/gng_topologies_visual.png"
+    output_path = os.path.join(args.out_dir, "gng_topologies_visual.png")
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
     plt.close()
     print(f"Topological visualization saved to: {output_path}")
@@ -167,7 +173,7 @@ def main():
     plt.suptitle("GNG Competency Spatial Projection (2D PCA)", fontsize=18, fontweight='bold', y=0.96)
     plt.subplots_adjust(hspace=0.3, wspace=0.2, bottom=0.1)
     
-    pca_output_path = "gng_router/outputs/gng_topologies_pca.png"
+    pca_output_path = os.path.join(args.out_dir, "gng_topologies_pca.png")
     plt.savefig(pca_output_path, dpi=300, bbox_inches='tight')
     plt.close()
     print(f"PCA spatial visualization saved to: {pca_output_path}")

@@ -3,7 +3,11 @@ import ast
 import pickle
 import pandas as pd
 import numpy as np
-from sentence_transformers import SentenceTransformer
+
+# One embedding model and one cache file for every router, so all results are comparable.
+# The paper uses BAAI/bge-small-en-v1.5 (384-d) for every router.
+DEFAULT_EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"
+DEFAULT_CACHE_PATH = "prompt_embeddings_cache.pkl"
 
 DEFAULT_LLM_NAMES = [
     'WizardLM/WizardLM-13B-V1.2',
@@ -56,7 +60,7 @@ def load_routerbench_data(data_path, llm_names=None):
             
     return df
 
-def get_embeddings(prompts, model_name="BAAI/bge-base-en-v1.5", cache_path=None, batch_size=32):
+def get_embeddings(prompts, model_name=DEFAULT_EMBEDDING_MODEL, cache_path=None, batch_size=32):
     """
     Encodes the given prompts using a SentenceTransformer model.
     Saves/loads embeddings from cache_path to avoid redundant computation.
@@ -69,12 +73,19 @@ def get_embeddings(prompts, model_name="BAAI/bge-base-en-v1.5", cache_path=None,
         print(f"Loading embeddings from cache: {cache_path}")
         with open(cache_path, 'rb') as f:
             cached_data = pickle.load(f)
-            # Verify if cached prompts match
-            if cached_data.get('model_name') == model_name and len(cached_data.get('embeddings', [])) == len(prompts):
-                return cached_data['embeddings']
-            else:
-                print("Cache mismatch (model name or data length). Recomputing embeddings...")
-                
+        cached_model = cached_data.get('model_name')
+        cached_len = len(cached_data.get('embeddings', []))
+        if cached_model == model_name and cached_len == len(prompts):
+            return cached_data['embeddings']
+        # Never overwrite a cache built for another model or dataset: other routers (and the
+        # paper's numbers) depend on it. Ask for a different cache path instead.
+        raise ValueError(
+            f"Embedding cache {cache_path} holds {cached_len} embeddings from '{cached_model}', "
+            f"but {len(prompts)} prompts with '{model_name}' were requested. "
+            f"Pass a different cache_path for this model, or delete the file to rebuild it."
+        )
+
+    from sentence_transformers import SentenceTransformer  # only needed when embeddings are computed
     print(f"Loading SentenceTransformer model: {model_name}")
     model = SentenceTransformer(model_name)
     
@@ -133,3 +144,29 @@ def split_dataset(df, embeddings, train_ratio=0.6, val_ratio=0.1, test_ratio=0.3
     print(f"  Test:  {len(test_idx)} samples")
     
     return splits
+
+
+# Classes that may appear in pickles saved by a script run directly (module "__main__").
+_MAIN_CLASS_MODULES = {
+    'KNNRouterModel': 'knn_router.main',
+    'SVMRouterModel': 'svm_router.main',
+    'MLPRouterModel': 'mlp_router.main',
+    'CascadingRouterModel': 'cascading_router.main',
+    'GNGRouterModel': 'gng_router.main',
+    'GNGTopology': 'gng_router.main',
+    'GNGSharedRouterModel': 'gng_shared.main',
+    'UniRouteKMeans': 'uniroute.router',
+}
+
+
+class _RouterUnpickler(pickle.Unpickler):
+    def find_class(self, module, name):
+        if module == '__main__' and name in _MAIN_CLASS_MODULES:
+            module = _MAIN_CLASS_MODULES[name]
+        return super().find_class(module, name)
+
+
+def load_router_pickle(path):
+    """Load a saved router pickle, including ones written by a script run as __main__."""
+    with open(path, 'rb') as f:
+        return _RouterUnpickler(f).load()

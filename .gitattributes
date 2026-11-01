@@ -1,0 +1,10 @@
+# Store source files with LF line endings in the repository; Git converts them for your OS on checkout.
+* text=auto
+# Data and binary files are stored and checked out byte for byte. Converting line endings inside
+# multi-line prompts would change the prompt text, and with it the embeddings and the paper's numbers.
+*.csv -text
+*.npy binary
+*.pkl binary
+*.png binary
+*.pdf binary
+*.docx binary

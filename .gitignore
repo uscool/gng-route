@@ -1,4 +1,11 @@
-*\__pycache__
-\graphrouter
-*.pkl
+__pycache__/
+graphrouter/
 .mcp.json
+
+# Models and embedding caches are large binaries: the paper's are published as a GitHub release
+*.pkl
+
+# Script outputs are regenerated on every run; only the paper reproduction report is kept
+/outputs/
+*/outputs/*
+!gng_shared/outputs/reproduction/

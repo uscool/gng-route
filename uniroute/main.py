@@ -1,12 +1,15 @@
 import os
+import sys
 import argparse
 import pickle
 import json
 import numpy as np
 import pandas as pd
-from sentence_transformers import SentenceTransformer
 
-from uniroute.data import load_routerbench_data, get_embeddings, split_dataset, DEFAULT_LLM_NAMES
+# Add the repository root to the path, as the other routers do, so no PYTHONPATH is needed
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from uniroute.data import load_routerbench_data, get_embeddings, split_dataset, DEFAULT_LLM_NAMES, DEFAULT_EMBEDDING_MODEL, DEFAULT_CACHE_PATH
 from uniroute.router import UniRouteKMeans
 from uniroute.eval import compute_deferral_curve_and_metrics, plot_deferral_curve
 
@@ -15,8 +18,8 @@ def main():
     
     # Dataset and model configuration
     parser.add_argument("--data_path", type=str, default="routertrain.csv", help="Path to RouterBench CSV")
-    parser.add_argument("--embedding_model", type=str, default="BAAI/bge-base-en-v1.5", help="Hugging Face embedding model")
-    parser.add_argument("--cache_path", type=str, default="prompt_embeddings_cache.pkl", help="Path to cache prompt embeddings")
+    parser.add_argument("--embedding_model", type=str, default=DEFAULT_EMBEDDING_MODEL, help="Hugging Face embedding model")
+    parser.add_argument("--cache_path", type=str, default=DEFAULT_CACHE_PATH, help="Path to cache prompt embeddings")
     parser.add_argument("--seed", type=type(42), default=42, help="Random seed for reproducibility")
     parser.add_argument("--K", type=type(10), default=10, help="Number of clusters for K-Means")
     parser.add_argument("--splits", type=str, default="0.7,0.0,0.3", help="Split ratios for Train, Val, Test (comma separated)")
@@ -96,6 +99,7 @@ def main():
                     
         # Encode the custom prompt
         print(f"Encoding custom prompt: '{args.predict_prompt}' using {model_name}...")
+        from sentence_transformers import SentenceTransformer  # only needed to embed a new prompt
         model = SentenceTransformer(model_name)
         prompt_emb = model.encode([args.predict_prompt], convert_to_numpy=True)
         

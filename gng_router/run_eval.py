@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 CAPSTONE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(CAPSTONE_ROOT)
 
-from uniroute.data import load_routerbench_data, get_embeddings, split_dataset, DEFAULT_LLM_NAMES
+from uniroute.data import load_routerbench_data, get_embeddings, split_dataset, DEFAULT_LLM_NAMES, DEFAULT_EMBEDDING_MODEL, DEFAULT_CACHE_PATH
 from gng_router.main import GNGRouterModel
 
 # np.trapz was removed in NumPy 2.4; np.trapezoid does not exist before NumPy 2.0
@@ -151,7 +151,7 @@ def plot_gng_deferral_curve(metrics, output_path):
     plt.figure(figsize=(8, 6))
     
     # Plot deferral curve
-    plt.plot(metrics['relative_costs'], metrics['accuracies'], label='GNG Router', color='blue', linewidth=2)
+    plt.plot(metrics['relative_costs'], metrics['accuracies'], label='GNG-isolated', color='blue', linewidth=2)
     
     # Plot individual LLMs
     for name, stats in metrics['llm_stats'].items():
@@ -163,7 +163,7 @@ def plot_gng_deferral_curve(metrics, output_path):
     # Label formatting
     plt.xlabel('Relative Cost (0.0 = Cheapest, 1.0 = Most Expensive)', fontsize=11)
     plt.ylabel('Accuracy', fontsize=11)
-    plt.title('Deferral Curve - GNG Router', fontsize=13, fontweight='bold')
+    plt.title('Deferral Curve - GNG-isolated', fontsize=13, fontweight='bold')
     plt.grid(True, linestyle='--', alpha=0.5)
     plt.xlim(-0.05, 1.05)
     
@@ -175,8 +175,9 @@ def plot_gng_deferral_curve(metrics, output_path):
         f"QNC: {qnc_str}"
     ))
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-    plt.gca().text(0.05, 0.95, textstr, transform=plt.gca().transAxes, fontsize=10,
-            verticalalignment='top', bbox=props)
+    # Lower right, above the legend: the deferral curve never passes through that corner
+    plt.gca().text(0.97, 0.16, textstr, transform=plt.gca().transAxes, fontsize=10,
+            verticalalignment='bottom', horizontalalignment='right', bbox=props)
             
     plt.legend(loc='lower right')
     plt.tight_layout()
@@ -229,7 +230,7 @@ def main():
     
     # 1. Load data & embeddings
     df = load_routerbench_data("routertrain.csv")
-    embeddings = get_embeddings(df['prompt'].tolist(), model_name="BAAI/bge-small-en-v1.5", cache_path="prompt_embeddings_cache.pkl")
+    embeddings = get_embeddings(df['prompt'].tolist(), model_name=DEFAULT_EMBEDDING_MODEL, cache_path=DEFAULT_CACHE_PATH)
     
     # 2. Split dataset (70-30 train-test)
     splits = split_dataset(df, embeddings, train_ratio=0.7, val_ratio=0.0, test_ratio=0.3, seed=42)
@@ -266,7 +267,7 @@ def main():
             'router': router,
             'llm_names': DEFAULT_LLM_NAMES,
             'llm_costs': llm_costs,
-            'model_name': 'BAAI/bge-small-en-v1.5'
+            'model_name': DEFAULT_EMBEDDING_MODEL
         }, f)
     print("Saved trained model to gng_router_model.pkl")
     
