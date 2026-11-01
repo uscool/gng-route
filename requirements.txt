@@ -1,0 +1,8 @@
+numpy==2.4.*
+pandas==3.0.*
+scikit-learn==1.8.*
+scipy==1.17.*
+matplotlib
+networkx
+sentence-transformers
+flask
