@@ -31,6 +31,8 @@ def main():
     # Create outputs directory
     os.makedirs("gng_router/outputs", exist_ok=True)
     
+    # We will plot a multi-panel figure for all models
+    # 11 models -> Let's use a 4x3 grid (12 panels, last one empty)
     n_models = len(llm_names)
     fig, axes = plt.subplots(4, 3, figsize=(18, 20))
     axes = axes.flatten()

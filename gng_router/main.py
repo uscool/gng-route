@@ -18,7 +18,7 @@ class GNGTopology:
     Implements a single Growing Neural Gas (GNG) topology representing the competence region of an LLM.
     """
     def __init__(self, embedding_dim=768, max_nodes=200, eps_b=0.05, eps_n=0.005, 
-                 a_max=50, alpha_err=0.5, beta_err=0.99, time_decay_rate=0.0005, 
+                 a_max=50, alpha_err=0.5, beta_err=0.99, time_decay_rate=0.0,  # kappa = 0, identical to the previous behaviour of this class (weight was always 1)
                  node_lifespan=20000, growth_dist_threshold=3.0, max_edge_distance=0.5):
         self.embedding_dim = embedding_dim
         self.max_nodes = max_nodes

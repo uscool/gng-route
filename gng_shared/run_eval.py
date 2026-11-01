@@ -2,6 +2,7 @@ import os
 import sys
 import pickle
 import json
+import argparse
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -12,6 +13,9 @@ sys.path.append(CAPSTONE_ROOT)
 
 from uniroute.data import load_routerbench_data, get_embeddings, split_dataset, DEFAULT_LLM_NAMES
 from gng_shared.main import GNGSharedRouterModel
+
+# np.trapz was removed in NumPy 2.4; np.trapezoid does not exist before NumPy 2.0
+_trapz = getattr(np, 'trapezoid', None) or np.trapz
 
 def evaluate_gng_shared_router(router, test_embeddings, test_df, llm_names, lambda_grid=None):
     """
@@ -94,7 +98,7 @@ def evaluate_gng_shared_router(router, test_embeddings, test_df, llm_names, lamb
     accuracies = np.array([p[1] for p in rel_points])
     
     # Calculate Area (AUDC) using trapezoid integration
-    area_100 = np.trapezoid(accuracies, relative_costs)
+    area_100 = _trapz(accuracies, relative_costs)
     
     # Calculate Area@50%
     a_50 = np.interp(0.5, relative_costs, accuracies)
@@ -105,7 +109,7 @@ def evaluate_gng_shared_router(router, test_embeddings, test_df, llm_names, lamb
     points_50 = sorted(list(set(zip(rel_costs_50, accuracies_50))), key=lambda p: p[0])
     r_50 = np.array([p[0] for p in points_50])
     acc_50 = np.array([p[1] for p in points_50])
-    area_50 = np.trapezoid(acc_50, r_50)
+    area_50 = _trapz(acc_50, r_50)
     
     # Calculate QNC
     valid_indices = np.where(accuracies >= a_max)[0]
@@ -160,7 +164,15 @@ def plot_gng_deferral_curve(metrics, output_path):
     plt.close()
     print(f"Deferral curve plot saved to: {output_path}")
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Evaluate the GNG-shared router.")
+    parser.add_argument("--seed", type=int, default=0,
+                        help="NumPy seed for the order in which training prompts are presented to the GNG (the paper's headline run uses 0)")
+    return parser.parse_args()
+
 def main():
+    args = parse_args()
+    np.random.seed(args.seed)
     print("=== GNG Shared Router Evaluation ===")
     os.makedirs("gng_shared/outputs", exist_ok=True)
     
